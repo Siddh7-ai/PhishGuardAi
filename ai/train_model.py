@@ -2,62 +2,35 @@
 """
 train_model.py
 ---------------
-Train and evaluate the Machine Learning model for
-the Phishing Website Detection System.
-
-Model:
-- Random Forest Classifier (scikit-learn)
-
-Why Random Forest?
-- Handles non-linear feature interactions well
-- Robust to noise
-- Provides feature importance (explainability)
-- Strong recall performance (security-first mindset)
-
-Output:
-- Trained model saved as model/phishing_model.pkl
-- Evaluation metrics printed to console
+PHASE 2:
+- Dataset cleaning & balancing
+- Multi-model training and evaluation
+- Automatic best-model selection (F1-score)
+- Save ONLY the best model
 """
 
 import os
 import sys
 import joblib
 import pandas as pd
+import numpy as np
 
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
-# ------------------------------------------------------------------
-# PATH SETUP (ROBUST & OS-INDEPENDENT)
-# ------------------------------------------------------------------
-
-# Absolute path to project root
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# Add project root to PYTHONPATH so imports work everywhere
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-# Paths
 DATA_PATH = os.path.join(BASE_DIR, "data", "sample_urls.csv")
 MODEL_OUTPUT_PATH = os.path.join(BASE_DIR, "model", "phishing_model.pkl")
 
-# Import after path fix
 from ai.features import extract_features
 
 
-# ------------------------------------------------------------------
-# DATA LOADING
-# ------------------------------------------------------------------
-def load_dataset(csv_path: str):
-    """
-    Load dataset and extract features.
-
-    CSV must contain:
-    - url
-    - label (0 = legitimate, 1 = phishing)
-    """
+def load_and_clean_dataset(csv_path: str):
     if not os.path.exists(csv_path):
         raise FileNotFoundError(f"Dataset not found at: {csv_path}")
 
@@ -66,56 +39,110 @@ def load_dataset(csv_path: str):
     if "url" not in df.columns or "label" not in df.columns:
         raise ValueError("CSV must contain 'url' and 'label' columns")
 
-    X = df["url"].apply(extract_features).tolist()
-    y = df["label"].values
+    print("\n=== DATASET STATS (BEFORE CLEANING) ===")
+    print(df["label"].value_counts())
+
+    df = df.dropna(subset=["url", "label"])
+    df["url"] = df["url"].astype(str)
+    df = df.drop_duplicates(subset=["url"])
+
+    features = []
+    labels = []
+
+    for _, row in df.iterrows():
+        try:
+            feats = extract_features(row["url"])
+            features.append(feats)
+            labels.append(int(row["label"]))
+        except Exception:
+            continue
+
+    X = np.array(features)
+    y = np.array(labels)
+
+    print("\n=== DATASET STATS (AFTER CLEANING) ===")
+    unique, counts = np.unique(y, return_counts=True)
+    for cls, cnt in zip(unique, counts):
+        print(f"Class {cls}: {cnt}")
 
     return X, y
 
 
-# ------------------------------------------------------------------
-# MODEL TRAINING
-# ------------------------------------------------------------------
-def train_model(X, y):
-    """
-    Train Random Forest classifier.
-    Emphasis on high recall to minimize false negatives.
-    """
-    model = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=None,
-        random_state=42,
-        class_weight={0: 1, 1: 2}  # Penalize phishing false negatives
-    )
+def balance_dataset(X, y, random_state=42):
+    classes, counts = np.unique(y, return_counts=True)
+    min_count = counts.min()
 
-    model.fit(X, y)
-    return model
+    rng = np.random.default_rng(random_state)
+    indices = []
+
+    for cls in classes:
+        cls_idx = np.where(y == cls)[0]
+        selected = rng.choice(cls_idx, min_count, replace=False)
+        indices.extend(selected)
+
+    rng.shuffle(indices)
+    return X[indices], y[indices]
 
 
-# ------------------------------------------------------------------
-# MODEL EVALUATION
-# ------------------------------------------------------------------
-def evaluate_model(model, X_test, y_test):
-    """
-    Evaluate model performance and print metrics.
-    """
-    y_pred = model.predict(X_test)
+def train_and_evaluate_models(X_train, X_test, y_train, y_test):
+    models = {
+        "LogisticRegression": LogisticRegression(
+            max_iter=1000,
+            solver="lbfgs",
+            random_state=42
+        ),
+        "RandomForest": RandomForestClassifier(
+            n_estimators=300,
+            random_state=42,
+            class_weight="balanced"
+        ),
+        "GradientBoosting": GradientBoostingClassifier(
+            random_state=42
+        )
+    }
 
-    print("\n=== MODEL EVALUATION ===")
-    print(f"Accuracy : {accuracy_score(y_test, y_pred):.4f}")
-    print(f"Precision: {precision_score(y_test, y_pred):.4f}")
-    print(f"Recall   : {recall_score(y_test, y_pred):.4f}")
-    print("\nConfusion Matrix:")
-    print(confusion_matrix(y_test, y_pred))
+    results = {}
+
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+
+        results[name] = {
+            "model": model,
+            "accuracy": accuracy_score(y_test, y_pred),
+            "precision": precision_score(y_test, y_pred),
+            "recall": recall_score(y_test, y_pred),
+            "f1": f1_score(y_test, y_pred)
+        }
+
+        print(f"\n=== {name} ===")
+        print(f"Accuracy : {results[name]['accuracy']:.4f}")
+        print(f"Precision: {results[name]['precision']:.4f}")
+        print(f"Recall   : {results[name]['recall']:.4f}")
+        print(f"F1-Score : {results[name]['f1']:.4f}")
+
+    return results
 
 
-# ------------------------------------------------------------------
-# MAIN PIPELINE
-# ------------------------------------------------------------------
+def select_best_model(results: dict):
+    best_name = max(results, key=lambda k: results[k]["f1"])
+    best_model = results[best_name]["model"]
+
+    if not hasattr(best_model, "predict_proba"):
+        raise RuntimeError("Selected model does not support predict_proba()")
+
+    print(f"\n[✓] Best Model Selected: {best_name}")
+    return best_model
+
+
 def main():
-    print("[+] Loading dataset...")
-    X, y = load_dataset(DATA_PATH)
+    print("[+] Loading and cleaning dataset...")
+    X, y = load_and_clean_dataset(DATA_PATH)
 
-    print("[+] Splitting train/test data (80/20)...")
+    print("[+] Balancing dataset...")
+    X, y = balance_dataset(X, y)
+
+    print("[+] Splitting train/test data...")
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -124,21 +151,18 @@ def main():
         stratify=y
     )
 
-    print("[+] Training Random Forest model...")
-    model = train_model(X_train, y_train)
+    print("[+] Training and evaluating models...")
+    results = train_and_evaluate_models(X_train, X_test, y_train, y_test)
 
-    print("[+] Evaluating model...")
-    evaluate_model(model, X_test, y_test)
+    best_model = select_best_model(results)
 
-    # Ensure model directory exists
     os.makedirs(os.path.dirname(MODEL_OUTPUT_PATH), exist_ok=True)
 
-    print("[+] Saving trained model...")
-    joblib.dump(model, MODEL_OUTPUT_PATH)
+    print("[+] Saving best model...")
+    joblib.dump(best_model, MODEL_OUTPUT_PATH)
 
     print(f"[✓] Model saved to: {MODEL_OUTPUT_PATH}")
 
 
-# ------------------------------------------------------------------
 if __name__ == "__main__":
     main()

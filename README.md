@@ -1,230 +1,318 @@
-=== README.md ===
-# 🛡️ PhishGuard AI — Phishing Website Detection System
+🛡️ PhishGuard AI — Phishing Website Detection System
 
-A **complete, end-to-end phishing website detection system** built for a **national-level hackathon**.  
-PhishGuard AI combines **Machine Learning**, **Explainable AI**, and a **modern cybersecurity UI** to help users instantly identify malicious websites with confidence and clarity.
+PhishGuard AI is a complete, end-to-end phishing website detection system designed for academic evaluation, hackathons, and real-world demonstration.
 
----
+The system combines Machine Learning, Explainable AI (XAI), a secure Flask backend, a modern web interface, and a browser extension to detect phishing websites with clarity and confidence.
 
-## 🚨 Problem Overview
+🚨 Problem Statement
 
-Phishing websites impersonate trusted brands to steal:
-- Login credentials
-- Banking information
-- Personal data
+Phishing websites imitate trusted platforms to steal:
 
-Most users cannot reliably distinguish a phishing URL from a legitimate one.  
-A **single false negative** (missing a phishing site) can cause serious harm.
+Login credentials
 
----
+Banking and financial details
 
-## ✅ Solution Summary
+Personal and sensitive information
 
-**PhishGuard AI** provides:
+Due to increasingly sophisticated URL structures, most users cannot reliably distinguish phishing websites from legitimate ones.
 
-- Real-time phishing detection using Machine Learning  
-- **Security-first design** (high recall, fewer missed attacks)  
-- Clear, human-readable explanations (Explainable AI)  
-- A dark, neon, hacker-style dashboard that judges immediately trust  
+Even one false negative (missing a phishing site) can lead to serious damage.
 
----
+✅ Solution Overview
 
-## 🧠 System Architecture
+PhishGuard AI addresses this problem by providing:
+
+Machine-learning-based phishing detection
+
+Security-first decision logic (high recall)
+
+Human-readable explanations for every prediction
+
+Multiple interfaces:
+
+Web application
+
+Browser extension (real-world usage)
+
+🧠 System Architecture
+User (Browser / Extension)
+        ↓
+Frontend / Browser Extension
+        ↓  REST API
+Flask Backend
+        ↓
+ML Model (Scikit-learn)
+
+End-to-End Flow
+
+User provides or visits a website URL
+
+URL is sent to the Flask backend
+
+URL features are extracted
+
+ML model predicts phishing probability
+
+Explainable risk factors are generated
+
+Result is returned with confidence and risk level
+
+✨ Core Features (Phase-Wise)
+🔹 Phase 1 — Feature Engineering
+
+Security-oriented URL features were introduced to improve detection accuracy.
+
+Features used:
+
+URL length
+
+Number of dots (subdomains)
+
+Presence of @ symbol
+
+Presence of hyphens (-)
+
+IP address instead of domain
+
+HTTPS usage
+
+Phishing-related keywords
+
+Digit count
+
+Special character count
+
+Subdomain depth
+
+Binary suspicious keyword indicator
+
+✔ Improves pattern recognition
+✔ Backward-compatible
+✔ Deterministic feature extraction
+
+🔹 Phase 2 — Dataset & Model Intelligence
+
+This phase focused on model reliability and academic strength.
+
+Enhancements:
+
+Dataset cleaning (duplicates, invalid entries removed)
+
+Dataset balancing to avoid class bias
+
+Multi-model training:
+
+Logistic Regression
+
+Random Forest
+
+Gradient Boosting
+
+Evaluation using:
+
+Accuracy
+
+Precision
+
+Recall
+
+F1-Score
+
+Automatic best-model selection based on F1-Score
+
+✔ Scientifically justified model choice
+✔ Security-oriented evaluation
+
+🔹 Phase 3 — Explainable AI, Backend & UX
+
+This phase transformed the model into a usable security system.
+
+Key features:
+
+Explainable AI (why a URL is risky)
+
+Confidence-based classification:
+
+SAFE
+
+SUSPICIOUS
+
+PHISHING
+
+Risk levels:
+
+Low
+
+Medium
+
+High
+
+Scan history logging (scan_history.csv)
+
+Secure Flask backend with:
+
+Input validation
+
+Health-check endpoint
+
+Error handling
+
+CORS support
+
+Improved frontend UX:
+
+Loading indicators
+
+Disabled buttons during scans
+
+Keyboard support
+
+Clear visual status indicators
+
+✔ Transparent
+✔ User-friendly
+✔ Demo-ready
+
+🔹 Phase 4 — Browser Extension (Real-World Deployment)
+
+Phase 4 introduced real-world usability through a browser extension.
+
+Browser Extension Capabilities:
+
+Automatically reads the current website URL
+
+One-click phishing scan
+
+Displays:
+
+Classification
+
+Confidence score
+
+Risk level
+
+Explainable risk factors
+
+Uses the same backend and ML model
+
+No ML logic inside the extension
+
+New files added:
+
+extension/
+├── manifest.json
+├── popup.html
+├── popup.js
+└── style.css
 
 
+✔ No retraining required
+✔ Existing web app remains unchanged
+✔ Clean separation of concerns
 
-User (Browser)
-↓
-Frontend (HTML / CSS / JavaScript)
-↓ REST API
-Backend (Flask)
-↓
-AI Layer (Random Forest - Scikit-learn)
+🤖 Machine Learning Details
 
+Algorithm: Random Forest Classifier
 
-### End-to-End Flow
-1. User enters a website URL  
-2. Frontend sends the URL to Flask API  
-3. Backend extracts URL features  
-4. ML model predicts phishing probability  
-5. Explainable risk factors are generated  
-6. Result is displayed with confidence and risk level  
+Library: Scikit-learn
 
----
+Probability-based predictions (predict_proba)
 
-## ✨ Core Features
+Recall prioritized over accuracy
 
-### 🎨 Frontend (Cybersecurity UI)
-- Dark mode with neon green / red accents  
-- Hacker-style professional dashboard  
-- Large centered URL input  
-- Loading scan animation  
-- Result card with:
-  - SAFE (green)
-  - SUSPICIOUS (yellow)
-  - PHISHING (red)
-- Confidence score (%)  
-- Clear list of detected phishing indicators  
-- Fully responsive (mobile + desktop)  
+In cybersecurity, missing an attack is worse than raising a warning.
 
-### ⚙️ Backend (Flask API)
-- REST endpoint: `POST /check_url`  
-- Loads ML model once at startup  
-- Input validation & error handling  
-- Fast inference  
-- CORS enabled for frontend integration  
+🧠 Explainable AI (XAI)
 
-### 🤖 AI / Machine Learning
-- Algorithm: **Random Forest Classifier**
-- Built using **Scikit-learn**
-- Focus on **high recall** (security-first)
-- Simple, interpretable features
+For every scan, the system explains why a URL is risky.
 
----
+Example explanations:
 
-## 🧪 Why Random Forest?
+URL is unusually long
 
-Random Forest was chosen because it:
-- Handles non-linear URL patterns well  
-- Is robust to noisy data  
-- Provides feature importance (explainable)  
-- Performs well with small-to-medium datasets  
-- Allows recall to be prioritized over accuracy  
+Multiple subdomains detected
 
-> In cybersecurity, **missing an attack is worse than raising a warning**.
+Suspicious keyword found
 
----
+Website does not use HTTPS
 
-## 🔍 Features Used for Detection
+IP address used instead of domain
 
-The model analyzes each URL using:
+✔ Builds trust
+✔ Easy to defend during evaluation
 
-- URL length  
-- Number of dots (subdomains)  
-- Presence of `@` symbol  
-- Presence of hyphens (`-`)  
-- IP address instead of domain  
-- HTTPS usage  
-- Phishing-related keywords:
-  - `login`
-  - `verify`
-  - `secure`
-  - `account`
-  - `update`
-  - `bank`
+📊 Logging & Monitoring
 
----
+All scans are logged in:
 
-## 🧠 Explainable AI (XAI)
-
-For every prediction, PhishGuard AI explains **WHY**:
-
-Examples:
-- “URL contains many subdomains, a known phishing tactic”
-- “Phishing-related keyword detected: ‘login’”
-- “Website does not use HTTPS”
-- “URL uses an IP address instead of a domain name”
-
-This makes the system:
-- Judge-friendly  
-- User-trustworthy  
-- Easy to defend during evaluation  
-
----
-
-## 📊 Model Training & Evaluation
-
-During training (`ai/train_model.py`):
-
-- Dataset is split: **80% train / 20% test**
-- Metrics printed:
-  - Accuracy
-  - Precision
-  - **Recall**
-  - Confusion Matrix
-
-Recall is intentionally emphasized to reduce false negatives.
-
----
-
-## 📁 Strict Project Structure
+logs/scan_history.csv
 
 
+Logged data includes:
 
+Timestamp
+
+URL
+
+Prediction label
+
+Confidence
+
+Risk level
+
+⚠️ Logs are not used for automatic training.
+They are intended for auditing, analysis, and future controlled improvement.
+
+📁 Project Structure
 phishing_detection_system/
 ├── frontend/
-│ ├── index.html
-│ ├── style.css
-│ └── script.js
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
 ├── backend/
-│ ├── app.py
-│ └── model.pkl
+│   └── app.py
 ├── ai/
-│ ├── train_model.py
-│ └── features.py
+│   ├── train_model.py
+│   └── features.py
 ├── data/
-│ └── sample_urls.csv
+│   └── sample_urls.csv
+├── extension/
+│   ├── manifest.json
+│   ├── popup.html
+│   ├── popup.js
+│   └── style.css
+├── logs/
+│   └── scan_history.csv
 ├── requirements.txt
 └── README.md
 
-
-⚠️ Structure is mandatory and hackathon-safe.
-
----
-
-## ⚙️ Setup & Execution Guide
-
-### 1️⃣ Clone Repository
-```bash
-git clone <repository-url>
-cd phishing_detection_system
-
-2️⃣ Create Virtual Environment (Recommended)
-python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-
-3️⃣ Install Dependencies
+⚙️ Setup & Execution
+1️⃣ Install Dependencies
 pip install -r requirements.txt
 
-4️⃣ Train the Machine Learning Model
-cd ai
-python train_model.py
+2️⃣ Train the Model
+python ai/train_model.py
 
-
-➡️ This generates:
-
-backend/model.pkl
-
-5️⃣ Run the Backend Server
-cd backend
-python app.py
+3️⃣ Run Backend
+python backend/app.py
 
 
 Backend runs at:
 
 http://127.0.0.1:5000
 
-6️⃣ Launch Frontend
+4️⃣ Run Web App
 
-Open frontend/index.html in your browser.
+Open:
 
-🔌 Sample API Usage
-Request
+frontend/index.html
 
-POST /check_url
+5️⃣ Load Browser Extension
 
-{
-  "url": "https://secure-login-google.com/login"
-}
+Open chrome://extensions/
 
-Response
-{
-  "label": "PHISHING",
-  "confidence": 0.92,
-  "risk_level": "High",
-  "risk_factors": [
-    "URL is unusually long, which is common in phishing attacks",
-    "Phishing-related keyword detected: 'login'",
-    "Domain contains hyphens, frequently seen in fake websites"
-  ]
-}
+Enable Developer Mode
+
+Click Load unpacked
+
+Select the extension/ folder

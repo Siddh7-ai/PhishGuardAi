@@ -1,6 +1,17 @@
 // === frontend/script.js ===
+// FINAL MERGED VERSION (PHASE 3 COMPLETE)
+//
+// Features:
+// - Loading animation
+// - Button disabling
+// - URL validation
+// - Risk level & confidence display
+// - Explainable AI output (risk factors)
+// - Keyboard UX (Enter key support)
 
-// DOM Elements
+// ------------------------------------------------------------------
+// DOM ELEMENTS
+// ------------------------------------------------------------------
 const scanBtn = document.getElementById("scanBtn");
 const urlInput = document.getElementById("urlInput");
 const loadingDiv = document.getElementById("loading");
@@ -10,16 +21,25 @@ const confidenceValue = document.getElementById("confidenceValue");
 const riskLevelSpan = document.getElementById("riskLevel");
 const riskFactorsList = document.getElementById("riskFactors");
 
-// Backend API URL
+// ------------------------------------------------------------------
+// BACKEND API
+// ------------------------------------------------------------------
 const API_URL = "http://127.0.0.1:5000/check_url";
 
-// Utility: Reset UI
+// ------------------------------------------------------------------
+// UI UTILITIES
+// ------------------------------------------------------------------
 function resetUI() {
     resultCard.classList.add("hidden");
     riskFactorsList.innerHTML = "";
 }
 
-// Utility: Validate URL format (basic)
+function setButtonState(isLoading) {
+    scanBtn.disabled = isLoading;
+    scanBtn.innerText = isLoading ? "Scanning..." : "Scan";
+}
+
+// Basic URL validation
 function isValidURL(url) {
     try {
         new URL(url);
@@ -29,13 +49,14 @@ function isValidURL(url) {
     }
 }
 
-// Update Result UI based on API response
+// ------------------------------------------------------------------
+// UPDATE RESULT UI
+// ------------------------------------------------------------------
 function updateResult(data) {
-    // Show result card
     resultCard.classList.remove("hidden");
 
-    // Status styling
-    statusDiv.className = "status"; // reset classes
+    // Reset status styles
+    statusDiv.className = "status";
     statusDiv.textContent = data.label;
 
     if (data.label === "SAFE") {
@@ -50,8 +71,8 @@ function updateResult(data) {
     confidenceValue.textContent = `${Math.round(data.confidence * 100)}%`;
     riskLevelSpan.textContent = data.risk_level;
 
-    // Risk factors
-    if (data.risk_factors.length === 0) {
+    // Explainable AI output
+    if (!data.risk_factors || data.risk_factors.length === 0) {
         const li = document.createElement("li");
         li.textContent = "No significant phishing indicators detected.";
         riskFactorsList.appendChild(li);
@@ -64,7 +85,9 @@ function updateResult(data) {
     }
 }
 
-// Handle Scan Button Click
+// ------------------------------------------------------------------
+// SCAN BUTTON HANDLER
+// ------------------------------------------------------------------
 scanBtn.addEventListener("click", async () => {
     const url = urlInput.value.trim();
     resetUI();
@@ -80,8 +103,9 @@ scanBtn.addEventListener("click", async () => {
         return;
     }
 
-    // Show loading animation
+    // UI loading state
     loadingDiv.classList.remove("hidden");
+    setButtonState(true);
 
     try {
         const response = await fetch(API_URL, {
@@ -100,17 +124,20 @@ scanBtn.addEventListener("click", async () => {
         updateResult(data);
 
     } catch (error) {
-        alert("Error: Unable to scan the website. Please check backend server.");
+        alert("Error: Unable to scan the website. Please ensure backend is running.");
         console.error(error);
     } finally {
-        // Hide loading animation
         loadingDiv.classList.add("hidden");
+        setButtonState(false);
     }
 });
 
-// UX Enhancement: Scan on Enter key
+// ------------------------------------------------------------------
+// UX ENHANCEMENT: ENTER KEY SUPPORT
+// ------------------------------------------------------------------
 urlInput.addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
         scanBtn.click();
     }
 });
+ 

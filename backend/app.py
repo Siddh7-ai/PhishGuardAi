@@ -1,25 +1,29 @@
-# === backend/app.py ===
 """
 app.py
 -------
 Flask REST API for Phishing Website Detection System.
 
-Responsibilities:
-- Load trained ML model once at startup
-- Accept URL via POST /check_url
-- Extract features
-- Perform prediction
-- Return explainable, judge-friendly JSON response
+FINAL MERGED VERSION (PHASE 3 COMPLETE)
 
-Tech:
-- Flask
-- Scikit-learn (inference only)
-- Security-first defaults
+Features:
+- Secure PYTHONPATH handling
+- CORS support
+- Health check endpoint
+- URL validation
+- Feature extraction
+- ML inference with predict_proba
+- Confidence-based classification
+- Risk level mapping
+- Explainable AI (risk factors)
+- Scan history logging (CSV)
 """
 
 import os
 import sys
+import csv
 import joblib
+from datetime import datetime
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
@@ -27,28 +31,30 @@ from flask_cors import CORS
 # PATH FIX (CRITICAL)
 # ------------------------------------------------------------------
 
-# Absolute path to project root
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Ensure project root is in PYTHONPATH
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
 # ------------------------------------------------------------------
 # IMPORTS (after path fix)
 # ------------------------------------------------------------------
+
 from ai.features import extract_features, explain_features
 
 # ------------------------------------------------------------------
 # APP INITIALIZATION
 # ------------------------------------------------------------------
+
 app = Flask(__name__)
 CORS(app)
 
 # ------------------------------------------------------------------
-# LOAD TRAINED MODEL
+# MODEL LOADING
 # ------------------------------------------------------------------
+
 MODEL_PATH = os.path.join(BASE_DIR, "model", "phishing_model.pkl")
+LOG_PATH = os.path.join(BASE_DIR, "logs", "scan_history.csv")
 
 try:
     model = joblib.load(MODEL_PATH)
@@ -58,23 +64,32 @@ except Exception as e:
     model = None
 
 # ------------------------------------------------------------------
+# CONFIGURABLE THRESHOLDS
+# ------------------------------------------------------------------
+
+CONFIDENCE_THRESHOLDS = {
+    "phishing": 0.80,
+    "suspicious": 0.70
+}
+
+# ------------------------------------------------------------------
 # HELPER FUNCTIONS
 # ------------------------------------------------------------------
+
 def classify_output(prediction: int, confidence: float) -> str:
     """
-    Convert numeric prediction to human-readable label.
-    Conservative logic for security systems.
+    Conservative classification for security systems.
     """
-    if prediction == 1 and confidence >= 0.8:
+    if prediction == 1 and confidence >= CONFIDENCE_THRESHOLDS["phishing"]:
         return "PHISHING"
-    if prediction == 1 or confidence < 0.7:
+    if prediction == 1 or confidence < CONFIDENCE_THRESHOLDS["suspicious"]:
         return "SUSPICIOUS"
     return "SAFE"
 
 
-def determine_risk(label: str, confidence: float) -> str:
+def determine_risk(label: str) -> str:
     """
-    Determine risk level for end users.
+    Map classification to user-facing risk level.
     """
     if label == "PHISHING":
         return "High"
@@ -82,9 +97,36 @@ def determine_risk(label: str, confidence: float) -> str:
         return "Medium"
     return "Low"
 
+
+def log_scan(url: str, label: str, confidence: float, risk: str):
+    """
+    Append scan details to CSV history log.
+    """
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    file_exists = os.path.exists(LOG_PATH)
+
+    with open(LOG_PATH, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow([
+                "timestamp",
+                "url",
+                "label",
+                "confidence",
+                "risk_level"
+            ])
+        writer.writerow([
+            datetime.utcnow().isoformat(),
+            url,
+            label,
+            round(confidence, 3),
+            risk
+        ])
+
 # ------------------------------------------------------------------
 # ROUTES
 # ------------------------------------------------------------------
+
 @app.route("/", methods=["GET"])
 def health_check():
     return jsonify({
@@ -117,12 +159,20 @@ def check_url():
         phishing_confidence = float(probabilities[1])
         prediction = int(phishing_confidence >= 0.5)
 
-        # Classification
+        # Classification & risk
         label = classify_output(prediction, phishing_confidence)
-        risk_level = determine_risk(label, phishing_confidence)
+        risk_level = determine_risk(label)
 
-        # Explainability
+        # Explainable AI
         risk_factors = explain_features(url)
+
+        # Logging
+        log_scan(
+            url=url,
+            label=label,
+            confidence=phishing_confidence,
+            risk=risk_level
+        )
 
         return jsonify({
             "url": url,
@@ -141,6 +191,7 @@ def check_url():
 # ------------------------------------------------------------------
 # ENTRY POINT
 # ------------------------------------------------------------------
+
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
