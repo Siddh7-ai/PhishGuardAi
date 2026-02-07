@@ -1,11 +1,11 @@
 // === frontend/script.js ===
-// FINAL MERGED VERSION (PHASE 3 COMPLETE)
+// FINAL FIXED VERSION (PHASE 3 – SYNCED WITH BACKEND)
 //
 // Features:
 // - Loading animation
 // - Button disabling
 // - URL validation
-// - Risk level & confidence display
+// - Risk level & phishing probability display (FIXED)
 // - Explainable AI output (risk factors)
 // - Keyboard UX (Enter key support)
 
@@ -50,16 +50,18 @@ function isValidURL(url) {
 }
 
 // ------------------------------------------------------------------
-// UPDATE RESULT UI
+// UPDATE RESULT UI (FIXED)
 // ------------------------------------------------------------------
 function updateResult(data) {
     resultCard.classList.remove("hidden");
 
-    // Reset status styles
+    // ----------------------------
+    // STATUS LABEL
+    // ----------------------------
     statusDiv.className = "status";
     statusDiv.textContent = data.label;
 
-    if (data.label === "SAFE") {
+    if (data.label === "LEGITIMATE") {
         statusDiv.classList.add("safe");
     } else if (data.label === "SUSPICIOUS") {
         statusDiv.classList.add("suspicious");
@@ -67,11 +69,23 @@ function updateResult(data) {
         statusDiv.classList.add("phishing");
     }
 
-    // Confidence & risk
-    confidenceValue.textContent = `${Math.round(data.confidence * 100)}%`;
+    // ----------------------------
+    // PHISHING PROBABILITY (FIXED)
+    // ----------------------------
+    const probability = Number(data.phishing_probability);
+
+    confidenceValue.textContent = isNaN(probability)
+        ? "N/A"
+        : `${probability.toFixed(2)}%`;
+
+    // ----------------------------
+    // RISK LEVEL
+    // ----------------------------
     riskLevelSpan.textContent = data.risk_level;
 
-    // Explainable AI output
+    // ----------------------------
+    // EXPLAINABLE AI OUTPUT
+    // ----------------------------
     if (!data.risk_factors || data.risk_factors.length === 0) {
         const li = document.createElement("li");
         li.textContent = "No significant phishing indicators detected.";
@@ -140,4 +154,3 @@ urlInput.addEventListener("keypress", (e) => {
         scanBtn.click();
     }
 });
- 

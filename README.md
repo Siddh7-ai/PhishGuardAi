@@ -1,204 +1,160 @@
-🛡️ PhishGuard AI — Phishing Website Detection System
+# 🛡️ PhishGuard AI — Phishing Website Detection System
 
-PhishGuard AI is a complete, end-to-end phishing website detection system designed for academic evaluation, hackathons, and real-world demonstration.
+PhishGuard AI is a **complete, end-to-end phishing website detection system** designed for **academic evaluation, hackathons, and real-world demonstration**.
 
-The system combines Machine Learning, Explainable AI (XAI), a secure Flask backend, a modern web interface, and a browser extension to detect phishing websites with clarity and confidence.
+The system combines **Machine Learning**, **Explainable AI (XAI)**, a **secure Flask backend**, a **modern web interface**, and a **browser extension** to detect phishing websites with clarity and confidence.
 
-🚨 Problem Statement
+---
+
+## 🚨 Problem Statement
 
 Phishing websites imitate trusted platforms to steal:
 
-Login credentials
-
-Banking and financial details
-
-Personal and sensitive information
+- Login credentials  
+- Banking and financial details  
+- Personal and sensitive information  
 
 Due to increasingly sophisticated URL structures, most users cannot reliably distinguish phishing websites from legitimate ones.
 
-Even one false negative (missing a phishing site) can lead to serious damage.
+Even **one false negative** (missing a phishing site) can lead to serious damage.
 
-✅ Solution Overview
+---
+
+## ✅ Solution Overview
 
 PhishGuard AI addresses this problem by providing:
 
-Machine-learning-based phishing detection
+- Machine-learning-based phishing detection  
+- Security-first decision logic (high recall)  
+- Human-readable explanations for every prediction  
+- Multiple interfaces:
+  - Web application  
+  - Browser extension (real-world usage)  
 
-Security-first decision logic (high recall)
+---
 
-Human-readable explanations for every prediction
+## 🧠 System Architecture
 
-Multiple interfaces:
-
-Web application
-
-Browser extension (real-world usage)
-
-🧠 System Architecture
 User (Browser / Extension)
-        ↓
+↓
 Frontend / Browser Extension
-        ↓  REST API
+↓ REST API
 Flask Backend
-        ↓
+↓
 ML Model (Scikit-learn)
 
-End-to-End Flow
 
-User provides or visits a website URL
+### End-to-End Flow
 
-URL is sent to the Flask backend
+1. User provides or visits a website URL  
+2. URL is sent to the Flask backend  
+3. URL features are extracted  
+4. ML model predicts phishing probability  
+5. Explainable risk factors are generated  
+6. Result is returned with confidence and risk level  
 
-URL features are extracted
+---
 
-ML model predicts phishing probability
+## ✨ Core Features (Phase-Wise)
 
-Explainable risk factors are generated
+---
 
-Result is returned with confidence and risk level
-
-✨ Core Features (Phase-Wise)
-🔹 Phase 1 — Feature Engineering
+## 🔹 Phase 1 — Feature Engineering
 
 Security-oriented URL features were introduced to improve detection accuracy.
 
-Features used:
-
-URL length
-
-Number of dots (subdomains)
-
-Presence of @ symbol
-
-Presence of hyphens (-)
-
-IP address instead of domain
-
-HTTPS usage
-
-Phishing-related keywords
-
-Digit count
-
-Special character count
-
-Subdomain depth
-
-Binary suspicious keyword indicator
-
-✔ Improves pattern recognition
-✔ Backward-compatible
-✔ Deterministic feature extraction
-
-🔹 Phase 2 — Dataset & Model Intelligence
-
-This phase focused on model reliability and academic strength.
-
-Enhancements:
-
-Dataset cleaning (duplicates, invalid entries removed)
-
-Dataset balancing to avoid class bias
-
-Multi-model training:
-
-Logistic Regression
-
-Random Forest
-
-Gradient Boosting
-
-Evaluation using:
-
-Accuracy
-
-Precision
-
-Recall
-
-F1-Score
-
-Automatic best-model selection based on F1-Score
-
-✔ Scientifically justified model choice
-✔ Security-oriented evaluation
-
-🔹 Phase 3 — Explainable AI, Backend & UX
-
-This phase transformed the model into a usable security system.
-
-Key features:
-
-Explainable AI (why a URL is risky)
-
-Confidence-based classification:
-
-SAFE
-
-SUSPICIOUS
-
-PHISHING
-
-Risk levels:
-
-Low
-
-Medium
-
-High
-
-Scan history logging (scan_history.csv)
-
-Secure Flask backend with:
-
-Input validation
-
-Health-check endpoint
-
-Error handling
-
-CORS support
-
-Improved frontend UX:
-
-Loading indicators
-
-Disabled buttons during scans
-
-Keyboard support
-
-Clear visual status indicators
-
-✔ Transparent
-✔ User-friendly
-✔ Demo-ready
-
-🔹 Phase 4 — Browser Extension (Real-World Deployment)
-
-Phase 4 introduced real-world usability through a browser extension.
-
-Browser Extension Capabilities:
-
-Automatically reads the current website URL
-
-One-click phishing scan
-
-Displays:
-
-Classification
-
-Confidence score
-
-Risk level
-
-Explainable risk factors
-
-Uses the same backend and ML model
-
-No ML logic inside the extension
-
-New files added:
-
+### Features Used
+- URL length  
+- Number of dots (subdomains)  
+- Presence of `@` symbol  
+- Presence of hyphens (`-`)  
+- IP address instead of domain  
+- HTTPS usage  
+- Phishing-related keywords  
+- Digit count  
+- Special character count  
+- Subdomain depth  
+- Binary suspicious keyword indicator  
+
+✔ Improves pattern recognition  
+✔ Backward-compatible  
+✔ Deterministic feature extraction  
+
+---
+
+## 🔹 Phase 2 — Dataset & Model Intelligence
+
+This phase focused on **model reliability and academic strength**.
+
+### Enhancements
+- Dataset cleaning (duplicates, invalid entries removed)  
+- Dataset balancing to avoid class bias  
+- Multi-model training:
+  - Logistic Regression  
+  - Random Forest  
+  - Gradient Boosting  
+- Evaluation using:
+  - Accuracy  
+  - Precision  
+  - Recall  
+  - F1-Score  
+- Automatic best-model selection based on F1-Score  
+
+✔ Scientifically justified model choice  
+✔ Security-oriented evaluation  
+
+---
+
+## 🔹 Phase 3 — Explainable AI, Backend & UX
+
+This phase transformed the model into a **usable security system**.
+
+### Key Features
+- Explainable AI (why a URL is risky)  
+- Confidence-based classification:
+  - SAFE  
+  - SUSPICIOUS  
+  - PHISHING  
+- Risk levels:
+  - Low  
+  - Medium  
+  - High  
+- Scan history logging (`scan_history.csv`)  
+
+### Secure Flask Backend
+- Input validation  
+- Health-check endpoint  
+- Error handling  
+- CORS support  
+
+### Improved Frontend UX
+- Loading indicators  
+- Disabled buttons during scans  
+- Keyboard support  
+- Clear visual status indicators  
+
+✔ Transparent  
+✔ User-friendly  
+✔ Demo-ready  
+
+---
+
+## 🔹 Phase 4 — Browser Extension (Real-World Deployment)
+
+Phase 4 introduced **real-world usability** through a browser extension.
+
+### Browser Extension Capabilities
+- Automatically reads the current website URL  
+- One-click phishing scan  
+- Displays:
+  - Classification  
+  - Confidence score  
+  - Risk level  
+  - Explainable risk factors  
+- Uses the same backend and ML model  
+- No ML logic inside the extension  
+
+### New Files Added
 extension/
 ├── manifest.json
 ├── popup.html
@@ -206,109 +162,110 @@ extension/
 └── style.css
 
 
-✔ No retraining required
-✔ Existing web app remains unchanged
-✔ Clean separation of concerns
+✔ No retraining required  
+✔ Existing web app remains unchanged  
+✔ Clean separation of concerns  
 
-🤖 Machine Learning Details
+---
 
-Algorithm: Random Forest Classifier
+## 🤖 Machine Learning Details
 
-Library: Scikit-learn
+- Algorithm: **Random Forest Classifier**  
+- Library: **Scikit-learn**  
+- Probability-based predictions (`predict_proba`)  
+- Recall prioritized over accuracy  
 
-Probability-based predictions (predict_proba)
+> In cybersecurity, **missing an attack is worse than raising a warning**.
 
-Recall prioritized over accuracy
+---
 
-In cybersecurity, missing an attack is worse than raising a warning.
+## 🧠 Explainable AI (XAI)
 
-🧠 Explainable AI (XAI)
+For every scan, the system explains **why** a URL is risky.
 
-For every scan, the system explains why a URL is risky.
+### Example Explanations
+- URL is unusually long  
+- Multiple subdomains detected  
+- Suspicious keyword found  
+- Website does not use HTTPS  
+- IP address used instead of domain  
 
-Example explanations:
+✔ Builds trust  
+✔ Easy to defend during evaluation  
 
-URL is unusually long
+---
 
-Multiple subdomains detected
-
-Suspicious keyword found
-
-Website does not use HTTPS
-
-IP address used instead of domain
-
-✔ Builds trust
-✔ Easy to defend during evaluation
-
-📊 Logging & Monitoring
+## 📊 Logging & Monitoring
 
 All scans are logged in:
-
 logs/scan_history.csv
 
 
-Logged data includes:
+### Logged Data Includes
+- Timestamp  
+- URL  
+- Prediction label  
+- Confidence  
+- Risk level  
 
-Timestamp
+⚠️ Logs are **not used for automatic training**.  
+They are intended for **auditing, analysis, and future controlled improvement**.
 
-URL
+---
 
-Prediction label
+## 📁 Project Structure
 
-Confidence
-
-Risk level
-
-⚠️ Logs are not used for automatic training.
-They are intended for auditing, analysis, and future controlled improvement.
-
-📁 Project Structure
-phishing_detection_system/
+A_Phishing_Project/
 ├── frontend/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
+│ ├── index.html
+│ ├── style.css
+│ └── script.js
 ├── backend/
-│   └── app.py
+│ └── app.py
 ├── ai/
-│   ├── train_model.py
-│   └── features.py
+│ ├── train_model.py
+│ └── features.py
 ├── data/
-│   └── sample_urls.csv
+│ └── sample_urls.csv
 ├── extension/
-│   ├── manifest.json
-│   ├── popup.html
-│   ├── popup.js
-│   └── style.css
+│ ├── manifest.json
+│ ├── popup.html
+│ ├── popup.js
+│ └── style.css
 ├── logs/
-│   └── scan_history.csv
+│ └── scan_history.csv
 ├── requirements.txt
 └── README.md
 
-⚙️ Setup & Execution
-1️⃣ Install Dependencies
-pip install -r requirements.txt
+---
 
-2️⃣ Train the Model
+## ⚙️ Setup & Execution
+
+
+### 1️⃣ Install Dependencies
+  ```bash
+  pip install -r requirements.txt
+### 2️⃣ Train the Model
+
+bash
+Copy code
 python ai/train_model.py
-
 3️⃣ Run Backend
+bash
+Copy code
 python backend/app.py
-
-
 Backend runs at:
 
+cpp
+Copy code
 http://127.0.0.1:5000
-
 4️⃣ Run Web App
-
 Open:
 
+bash
+Copy code
 frontend/index.html
-
 5️⃣ Load Browser Extension
-
 Open chrome://extensions/
 
 Enable Developer Mode

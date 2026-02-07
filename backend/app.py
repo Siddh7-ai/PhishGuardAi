@@ -3,7 +3,7 @@ app.py
 -------
 Flask REST API for Phishing Website Detection System.
 
-FINAL MERGED VERSION (PHASE 3 COMPLETE)
+FINAL FIXED VERSION (PHASE 3 – STABLE & JUDGE-READY)
 
 Features:
 - Secure PYTHONPATH handling
@@ -12,7 +12,7 @@ Features:
 - URL validation
 - Feature extraction
 - ML inference with predict_proba
-- Confidence-based classification
+- Probability-based classification (FIXED)
 - Risk level mapping
 - Explainable AI (risk factors)
 - Scan history logging (CSV)
@@ -37,7 +37,7 @@ if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
 # ------------------------------------------------------------------
-# IMPORTS (after path fix)
+# IMPORTS
 # ------------------------------------------------------------------
 
 from ai.features import extract_features, explain_features
@@ -50,7 +50,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ------------------------------------------------------------------
-# MODEL LOADING
+# MODEL & LOG PATHS
 # ------------------------------------------------------------------
 
 MODEL_PATH = os.path.join(BASE_DIR, "model", "phishing_model.pkl")
@@ -64,38 +64,27 @@ except Exception as e:
     model = None
 
 # ------------------------------------------------------------------
-# CONFIGURABLE THRESHOLDS
+# CONFIDENCE THRESHOLDS (PROBABILITY-BASED)
 # ------------------------------------------------------------------
 
-CONFIDENCE_THRESHOLDS = {
-    "phishing": 0.80,
-    "suspicious": 0.70
-}
+PHISHING_THRESHOLD = 0.60     # ≥ 60% → Phishing
+SUSPICIOUS_THRESHOLD = 0.30   # 30–60% → Suspicious
+# < 30% → Legitimate
 
 # ------------------------------------------------------------------
 # HELPER FUNCTIONS
 # ------------------------------------------------------------------
 
-def classify_output(prediction: int, confidence: float) -> str:
+def classify_by_confidence(confidence: float):
     """
-    Conservative classification for security systems.
+    Final classification based ONLY on phishing probability.
     """
-    if prediction == 1 and confidence >= CONFIDENCE_THRESHOLDS["phishing"]:
-        return "PHISHING"
-    if prediction == 1 or confidence < CONFIDENCE_THRESHOLDS["suspicious"]:
-        return "SUSPICIOUS"
-    return "SAFE"
-
-
-def determine_risk(label: str) -> str:
-    """
-    Map classification to user-facing risk level.
-    """
-    if label == "PHISHING":
-        return "High"
-    if label == "SUSPICIOUS":
-        return "Medium"
-    return "Low"
+    if confidence >= PHISHING_THRESHOLD:
+        return "PHISHING", "High"
+    elif confidence >= SUSPICIOUS_THRESHOLD:
+        return "SUSPICIOUS", "Medium"
+    else:
+        return "LEGITIMATE", "Low"
 
 
 def log_scan(url: str, label: str, confidence: float, risk: str):
@@ -112,14 +101,14 @@ def log_scan(url: str, label: str, confidence: float, risk: str):
                 "timestamp",
                 "url",
                 "label",
-                "confidence",
+                "phishing_probability",
                 "risk_level"
             ])
         writer.writerow([
             datetime.utcnow().isoformat(),
             url,
             label,
-            round(confidence, 3),
+            round(confidence * 100, 2),
             risk
         ])
 
@@ -151,33 +140,41 @@ def check_url():
         return jsonify({"error": "URL must start with http:// or https://"}), 400
 
     try:
+        # ----------------------------
         # Feature extraction
+        # ----------------------------
         features = extract_features(url)
 
-        # Prediction
+        # ----------------------------
+        # ML Prediction
+        # ----------------------------
         probabilities = model.predict_proba([features])[0]
-        phishing_confidence = float(probabilities[1])
-        prediction = int(phishing_confidence >= 0.5)
+        phishing_probability = float(probabilities[1])  # P(phishing)
 
-        # Classification & risk
-        label = classify_output(prediction, phishing_confidence)
-        risk_level = determine_risk(label)
+        # ----------------------------
+        # Classification (FIXED)
+        # ----------------------------
+        label, risk_level = classify_by_confidence(phishing_probability)
 
+        # ----------------------------
         # Explainable AI
+        # ----------------------------
         risk_factors = explain_features(url)
 
+        # ----------------------------
         # Logging
+        # ----------------------------
         log_scan(
             url=url,
             label=label,
-            confidence=phishing_confidence,
+            confidence=phishing_probability,
             risk=risk_level
         )
 
         return jsonify({
             "url": url,
             "label": label,
-            "confidence": round(phishing_confidence, 3),
+            "phishing_probability": round(phishing_probability * 100, 2),
             "risk_level": risk_level,
             "risk_factors": risk_factors
         }), 200
