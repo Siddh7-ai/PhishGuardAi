@@ -6,12 +6,8 @@
 
 class APIClient {
     constructor() {
-        // FIXED: Remove /api prefix since backend routes include it
-        this.baseURL = window.location.hostname === 'localhost'
-        ? 'http://localhost:5000'
-        : 'https://phising-detection-onik.onrender.com';
-        
-        console.log('✅ APIClient initialized with baseURL:', this.baseURL);
+        this.baseURL = "https://phising-detection-onik.onrender.com";
+        console.log("✅ APIClient initialized with baseURL:", this.baseURL);
     }
 
     /**
