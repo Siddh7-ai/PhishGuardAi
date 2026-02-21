@@ -537,7 +537,7 @@ CORS(
         "http://localhost:3000",
         "http://localhost:8080",
         "http://127.0.0.1:5500",
-        "https://your-actual-app.vercel.app",   # ← your Vercel URL
+        "https://phish-guard-ai-lac.vercel.app/",   # ← your Vercel URL
         "https://*.vercel.app"
     ]}},
     allow_headers=['Content-Type', 'Authorization'],
