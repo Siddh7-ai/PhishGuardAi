@@ -525,9 +525,12 @@ app.config['SECRET_KEY'] = Config.SECRET_KEY if hasattr(Config, 'SECRET_KEY') el
 
 CORS(
     app,
-    origins=Config.CORS_ORIGINS if hasattr(Config, 'CORS_ORIGINS') else ['*'],
+    origins=[
+        "https://phising-detection-1-sq75.onrender.com"
+    ],
     supports_credentials=True,
-    allow_headers=['Content-Type', 'Authorization']
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "OPTIONS"]
 )
 
 limiter = Limiter(

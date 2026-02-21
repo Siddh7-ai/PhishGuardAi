@@ -22,7 +22,7 @@ function showAuthModal(action, callback) {
     // Set modal text based on action
     const actionTexts = {
         'download': {
-            title: 'Login to Download',
+            title: 'Login',
             subtitle: 'Please login or create an account to download scan reports'
         },
         'share': {
@@ -129,64 +129,50 @@ function hideError(elementId) {
  */
 async function handleLogin(e) {
     e.preventDefault();
-    
+
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     const btn = document.getElementById('loginBtn');
-    
-    // Validation
+
     if (!email || !password) {
         showError('loginError', 'Please fill in all fields');
         return;
     }
-    
-    // Show loading
+
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Logging in...</span>';
     hideError('loginError');
-    
+
     try {
-        fetch("https://phising-detection-api.onrender.com/auth/register", {
+        const response = await fetch("https://phising-detection-api.onrender.com/auth/login", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (!response.ok) {
             throw new Error(data.error || 'Login failed');
         }
-        
-        // Save token and user
+
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Update UI
+
         updateUserDisplay(data.user.username);
-        
-        // Show success
         showToast('Login successful!', 'success');
-        
-        // Close modal
         closeAuthModal();
-        
-        // Execute callback if exists
+
         if (authModalCallback) {
             authModalCallback();
             authModalCallback = null;
         }
-        
-        // Reload stats
-        if (typeof loadUserStats === 'function') {
-            loadUserStats();
-        }
-        
+
     } catch (error) {
         console.error('Login error:', error);
-        showError('loginError', error.message || 'Login failed. Please try again.');
+        showError('loginError', error.message || 'Login failed');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> <span>Login</span>';
@@ -237,7 +223,7 @@ async function handleSignup(e) {
     hideError('signupError');
     
     try {
-        const response = await fetch('https://phising-detection-api.onrender.com/auth/login', {
+        const response = await fetch('https://phising-detection-api.onrender.com/auth/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
