@@ -42,7 +42,7 @@ except ImportError:
 def get_domain_age(url):
     """
     Get domain age using multiple methods
-    
+    +
     Returns:
         str: Domain age description or 'Unknown'
     """
