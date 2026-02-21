@@ -1,9 +1,16 @@
 /* ============================================
    PHISHING GUIDE BUTTON & MODAL STYLES
+   OPTIMIZED v2 — scroll lag fixed
    ============================================ */
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Guide Button */
@@ -11,18 +18,17 @@
     position: absolute;
     top: 20px;
     right: 20px;
-
     padding: 10px 20px;
     background: linear-gradient(135deg, #00ff41 0%, #0d7377 100%);
     color: #0a0e27;
     border: none;
     border-radius: 8px;
-    font-weight: 600;   
+    font-weight: 600;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 4px 12px rgba(0, 255, 65, 0.3);
 }
 
@@ -35,47 +41,75 @@
     font-size: 18px;
 }
 
-/* Guide Modal */
+/* ─── Guide Modal ───────────────────────────────────────────────
+   KEY FIXES:
+   • Removed backdrop-filter: blur() — biggest perf killer
+   • Replaced with a solid semi-transparent overlay instead
+   • overflow-y on modal itself instead of nested element
+   ──────────────────────────────────────────────────────────── */
 .guide-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(10px);
+    /* Solid overlay instead of blur — no GPU composite cost */
+    background: rgba(5, 8, 30, 0.88);
     z-index: 10000;
     display: none;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    /* Scroll lives on the modal, not the inner div */
+    overflow-y: auto;
     padding: 20px;
+    /* Promote to own layer ONCE — avoids per-frame repaint */
+    will-change: opacity;
 }
 
 .guide-modal.active {
     display: flex;
+    animation: fadeIn 0.2s ease-out forwards;
 }
 
+/* ─── Guide Content ─────────────────────────────────────────────
+   KEY FIXES:
+   • Removed will-change: transform (was creating stacking issues)
+   • Removed transform: translateZ(0) (unnecessary here)
+   • Removed scroll-behavior: smooth (causes jank on long content)
+   • overflow-y: visible — parent modal handles scrolling now
+   • contain: layout style — browser can skip unrelated repaints
+   ──────────────────────────────────────────────────────────── */
 .guide-content {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    background: #1a1f3a;
     border-radius: 16px;
     max-width: 900px;
     width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
+    /* No overflow-y here — parent scrolls */
     padding: 40px;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0, 255, 65, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     border: 2px solid #00ff41;
-
-    scroll-behavior: smooth;
     scrollbar-gutter: stable;
-    animation: slideUp 0.3s ease;
-    will-change: transform;
-    transform: translateZ(0);
+    animation: slideUp 0.25s ease-out forwards;
+    /* Containment helps browser skip unrelated layout work */
+    contain: layout style;
+    /* Single stable transform — no translateZ hack needed */
+    margin: auto;
 }
 
+/* ─── Scrollbar ─────────────────────────────────────────────── */
+.guide-modal::-webkit-scrollbar {
+    width: 8px;
+}
+.guide-modal::-webkit-scrollbar-track {
+    background: transparent;
+}
+.guide-modal::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #00ff41, #0d7377);
+    border-radius: 10px;
+}
 
+/* ─── Close Button ──────────────────────────────────────────── */
 .guide-close {
     position: absolute;
     top: 20px;
@@ -91,7 +125,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
     line-height: 1;
     padding: 0;
 }
@@ -102,6 +136,7 @@
     transform: rotate(90deg);
 }
 
+/* ─── Header ────────────────────────────────────────────────── */
 .guide-header {
     text-align: center;
     margin-bottom: 30px;
@@ -125,7 +160,7 @@
     font-size: 16px;
 }
 
-/* Guide Tabs */
+/* ─── Tabs ──────────────────────────────────────────────────── */
 .guide-tabs {
     display: flex;
     gap: 10px;
@@ -142,7 +177,7 @@
     font-size: 16px;
     font-weight: 600;
     border-bottom: 3px solid transparent;
-    transition: all 0.3s ease;
+    transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 .guide-tab:hover {
@@ -162,7 +197,6 @@
     color: #d6fdf0;
 }
 
-
 .guide-tab-content.active {
     display: block;
 }
@@ -179,7 +213,7 @@
     font-size: 18px;
 }
 
-/* Guide Steps */
+/* ─── Guide Steps ───────────────────────────────────────────── */
 .guide-step {
     display: flex;
     gap: 20px;
@@ -197,7 +231,7 @@
     background: linear-gradient(135deg, #00ff41 0%, #0d7377 100%);
     color: #000;
     font-weight: 800;
-    box-shadow: 0 0 15px rgba(0,255,65,0.6);
+    box-shadow: 0 0 12px rgba(0, 255, 65, 0.5);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -225,7 +259,6 @@
     line-height: 1.6;
 }
 
-
 .tip {
     margin-top: 10px;
     padding: 10px;
@@ -236,7 +269,7 @@
     color: #e8e8e8;
 }
 
-/* Keyboard Shortcuts */
+/* ─── Keyboard Shortcuts ────────────────────────────────────── */
 .keyboard-shortcuts {
     margin-top: 30px;
     padding: 20px;
@@ -271,7 +304,7 @@ kbd {
     font-weight: 600;
 }
 
-/* Flow Diagram */
+/* ─── Flow Diagram ──────────────────────────────────────────── */
 .flow-diagram {
     padding: 20px;
 }
@@ -354,7 +387,7 @@ kbd {
     color: #e8e8e8;
 }
 
-/* About Section */
+/* ─── About Section ─────────────────────────────────────────── */
 .about-section {
     margin-bottom: 30px;
     padding: 20px;
@@ -375,13 +408,14 @@ kbd {
     border-radius: 8px;
     border: 1px solid rgba(0, 255, 65, 0.2);
     text-align: center;
-    transition: all 0.3s ease;
+    /* Only transition cheap properties */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .feature-card:hover {
     border-color: #00ff41;
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0, 255, 65, 0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 255, 65, 0.15);
 }
 
 .feature-icon {
@@ -484,10 +518,7 @@ kbd {
     color: #00ff41;
 }
 
-/* ============================================
-   ENHANCED CHARTS SECTION
-   ============================================ */
-
+/* ─── Charts Section ────────────────────────────────────────── */
 .detailed-analysis {
     margin-top: 30px;
 }
@@ -502,7 +533,7 @@ kbd {
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .details-toggle:hover {
@@ -515,7 +546,7 @@ kbd {
 .details-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.5s ease;
+    transition: max-height 0.4s ease;
 }
 
 .details-content.expanded {
@@ -591,48 +622,25 @@ kbd {
     text-align: center;
 }
 
-/* Responsive */
+/* ─── Responsive ────────────────────────────────────────────── */
 @media (max-width: 768px) {
     .guide-content {
         padding: 20px;
     }
-    
+
     .guide-header h1 {
         font-size: 24px;
     }
-    
+
     .guide-tabs {
         flex-direction: column;
     }
-    
+
     .charts-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .features-grid {
         grid-template-columns: 1fr;
     }
 }
-.guide-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-.guide-content::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 10px;
-}
-
-.guide-content::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #00ff41, #0d7377);
-    border-radius: 10px;
-}
-.guide-modal.active {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-.guide-content {
-    animation: slideUp 0.3s ease;
-}
-
-
-/* Tab switching JavaScript (add to your script.js or inline) */
