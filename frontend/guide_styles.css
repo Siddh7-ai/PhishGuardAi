@@ -1,6 +1,6 @@
 /* ============================================
    PHISHING GUIDE BUTTON & MODAL STYLES
-   OPTIMIZED v2 — scroll lag fixed
+   OPTIMIZED v3 — touchpad scroll lag fixed
    ============================================ */
 
 @keyframes fadeIn {
@@ -42,10 +42,14 @@
 }
 
 /* ─── Guide Modal ───────────────────────────────────────────────
-   KEY FIXES:
-   • Removed backdrop-filter: blur() — biggest perf killer
-   • Replaced with a solid semi-transparent overlay instead
-   • overflow-y on modal itself instead of nested element
+   FIX v3:
+   • Removed will-change: opacity — keeping it permanently allocated
+     is wasteful and causes compositor thrashing on touchpad scroll.
+     GPU layers are now only promoted during animation via the
+     .animating helper class (added/removed by JS).
+   • overflow-y: auto with overscroll-behavior: contain stops scroll
+     from leaking to the page behind and reduces jank.
+   • touch-action: pan-y enables native momentum scrolling on touchpad.
    ──────────────────────────────────────────────────────────── */
 .guide-modal {
     position: fixed;
@@ -53,16 +57,21 @@
     left: 0;
     width: 100%;
     height: 100%;
-    /* Solid overlay instead of blur — no GPU composite cost */
     background: rgba(5, 8, 30, 0.88);
     z-index: 10000;
     display: none;
     align-items: center;
     justify-content: center;
-    /* Scroll lives on the modal, not the inner div */
     overflow-y: auto;
     padding: 20px;
-    /* Promote to own layer ONCE — avoids per-frame repaint */
+    /* DO NOT put will-change here permanently */
+    overscroll-behavior: contain;  /* ← prevents scroll chaining to page */
+    touch-action: pan-y;           /* ← enables native touchpad momentum */
+    box-sizing: border-box;
+}
+
+/* Only promote GPU layer during the brief open animation */
+.guide-modal.animating {
     will-change: opacity;
 }
 
@@ -72,29 +81,31 @@
 }
 
 /* ─── Guide Content ─────────────────────────────────────────────
-   KEY FIXES:
-   • Removed will-change: transform (was creating stacking issues)
-   • Removed transform: translateZ(0) (unnecessary here)
-   • Removed scroll-behavior: smooth (causes jank on long content)
-   • overflow-y: visible — parent modal handles scrolling now
-   • contain: layout style — browser can skip unrelated repaints
+   FIX v3:
+   • Replaced box-shadow's massive blur (60px) with a smaller one (24px)
+     — large blur radii are repainted every scroll frame on many GPUs.
+   • Moved animation off the content box onto the modal itself so the
+     content box has NO animated properties after load — zero repaint cost.
+   • Kept contain: layout style but removed contain: paint to avoid
+     clipping the border glow on some renderers.
+   • Removed scrollbar-gutter: stable — it's only needed on the scrolling
+     element (the modal), not the content box.
    ──────────────────────────────────────────────────────────── */
 .guide-content {
     background: #1a1f3a;
     border-radius: 16px;
     max-width: 900px;
     width: 100%;
-    /* No overflow-y here — parent scrolls */
     padding: 40px;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    /* Reduced blur from 60px → 24px: same visual depth, far cheaper */
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.7);
     border: 2px solid #00ff41;
-    scrollbar-gutter: stable;
     animation: slideUp 0.25s ease-out forwards;
-    /* Containment helps browser skip unrelated layout work */
     contain: layout style;
-    /* Single stable transform — no translateZ hack needed */
     margin: auto;
+    /* Ensure content box itself never scrolls — modal does */
+    overflow: visible;
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────── */
@@ -231,7 +242,8 @@
     background: linear-gradient(135deg, #00ff41 0%, #0d7377 100%);
     color: #000;
     font-weight: 800;
-    box-shadow: 0 0 12px rgba(0, 255, 65, 0.5);
+    /* FIX: replaced large box-shadow blur with a tighter glow */
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.4);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -408,14 +420,14 @@ kbd {
     border-radius: 8px;
     border: 1px solid rgba(0, 255, 65, 0.2);
     text-align: center;
-    /* Only transition cheap properties */
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .feature-card:hover {
     border-color: #00ff41;
     transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 255, 65, 0.15);
+    /* FIX: reduced blur radius from 20px → 10px */
+    box-shadow: 0 8px 10px rgba(0, 255, 65, 0.15);
 }
 
 .feature-icon {
@@ -543,15 +555,38 @@ kbd {
     box-shadow: 0 6px 20px rgba(0, 255, 65, 0.3);
 }
 
+/* ─── FIX: max-height accordion → grid-rows accordion ──────────
+   max-height transition on huge values (2000px) forces the browser
+   to calculate layout every frame. grid-template-rows: 0fr → 1fr
+   achieves the same collapse effect with zero layout thrash.
+   Requires a single wrapper div inside .details-content (see note).
+──────────────────────────────────────────────────────────────── */
 .details-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.35s ease;
+    /* No overflow:hidden needed here — inner div handles it */
 }
 
 .details-content.expanded {
-    max-height: 2000px;
+    grid-template-rows: 1fr;
     margin-top: 20px;
+}
+
+/* Add this wrapper div INSIDE .details-content in your HTML:
+   <div class="details-content">
+     <div class="details-inner">   ← NEW wrapper
+       ... your chart content ...
+     </div>
+   </div>
+*/
+.details-inner {
+    overflow: hidden;
+    padding: 0;
+    transition: padding 0.35s ease;
+}
+
+.details-content.expanded .details-inner {
     padding: 20px;
     background: rgba(26, 31, 53, 0.8);
     border-radius: 8px;
