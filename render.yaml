@@ -1,0 +1,33 @@
+# Render manifest for PhishGuard AI backend
+# Edit `repo` and `branch` to match your GitHub repository
+
+services:
+  - type: web
+    name: phishguard-backend
+    env: docker
+    plan: free
+    repo: https://github.com/yourusername/phishguard-ai
+    branch: main
+    dockerfilePath: Dockerfile
+    buildCommand: ""
+    startCommand: ""
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_PATH
+        value: backend/phishguard.db
+    secrets:
+      - SECRET_KEY
+      - JWT_SECRET_KEY
+      - DATABASE_URL
+
+# Notes:
+# 1) Replace `repo` with your GitHub repo URL and `branch` as appropriate.
+# 2) Create the referenced secrets (SECRET_KEY, JWT_SECRET_KEY, DATABASE_URL)
+#    in the Render dashboard under "Secrets" before deploying.
+# 3) This manifest uses the provided Dockerfile (multi-stage). Render will
+#    build the Docker image from the Dockerfile and run the service.
+# 4) If you prefer not to use Docker, remove `env: docker` and configure
+#    a Python service with an appropriate start command (gunicorn backend.app:app).
