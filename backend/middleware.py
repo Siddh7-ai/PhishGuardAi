@@ -4,17 +4,33 @@ JWT middleware for authentication
 import jwt
 from functools import wraps
 from flask import request, jsonify
-from config import Config
-from database import User
+from datetime import datetime, timedelta
+
+try:
+    from config import Config
+except ImportError:
+    class Config:
+        JWT_SECRET_KEY = 'phishguard-jwt-secret'
+        JWT_EXPIRATION_DELTA = timedelta(hours=1)
+        JWT_ALGORITHM = 'HS256'
+        MIN_PASSWORD_LENGTH = 8
+        REQUIRE_UPPERCASE = True
+        REQUIRE_NUMBER = True
+        REQUIRE_SPECIAL_CHAR = True
+
+try:
+    from database import User
+except ImportError:
+    User = None
 
 def create_jwt_token(user_id):
     """Create JWT token"""
-    from datetime import datetime
+    expiration_delta = getattr(Config, 'JWT_EXPIRATION_DELTA', None) or timedelta(hours=1)
     
     payload = {
         'user_id': user_id,
         'iat': datetime.utcnow(),
-        'exp': datetime.utcnow() + Config.JWT_EXPIRATION_DELTA
+        'exp': datetime.utcnow() + expiration_delta
     }
     
     token = jwt.encode(payload, Config.JWT_SECRET_KEY, algorithm=Config.JWT_ALGORITHM)
@@ -54,9 +70,13 @@ def token_required(f):
             payload = decode_jwt_token(token)
             user_id = payload['user_id']
             
-            current_user = User.get_by_id(user_id)
-            if not current_user:
-                return jsonify({'error': 'User not found or inactive'}), 401
+            if User:
+                current_user = User.get_by_id(user_id)
+                if not current_user:
+                    return jsonify({'error': 'User not found or inactive'}), 401
+            else:
+                # If User class is not available, use minimal user object from token
+                current_user = {'id': user_id}
             
         except ValueError as e:
             return jsonify({'error': str(e)}), 401

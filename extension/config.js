@@ -1,8 +1,16 @@
 // Configuration - Whitelist Only
 
 const CONFIG = {
-  // Backend API endpoint
-  API_URL: 'http://127.0.0.1:5000/api/scan',
+  // Backend API endpoint - supports both development and production
+  API_URL: (() => {
+    // Development environment
+    if (chrome.runtime.getURL('').includes('extension')) {
+      // Local development
+      return 'http://127.0.0.1:5000/api/scan';
+    }
+    // Production - use environment or fallback to deployed URL
+    return process.env.REACT_APP_API_URL || 'https://phishing-detection-api.onrender.com/api/scan';
+  })(),
   
   // Cache duration (15 minutes)
   CACHE_TTL_MS: 15 * 60 * 1000,

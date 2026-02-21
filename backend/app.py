@@ -23,8 +23,17 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from auth import auth_bp
-from middleware import token_required
+import sys
+
+# Handle relative imports for WSGI compatibility
+try:
+    from auth import auth_bp
+    from middleware import token_required
+except ImportError:
+    # Fallback for WSGI environments    
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from auth import auth_bp
+    from middleware import token_required
 
 # ------------------------------------------------------------------
 # DOMAIN AGE CHECKER MODULE
@@ -465,6 +474,13 @@ except ImportError:
         RATELIMIT_DEFAULT = "100 per minute"
         RATELIMIT_STORAGE_URL = "memory://"
         SECRET_KEY = os.environ.get('SECRET_KEY', 'phishguard-secret-key')
+        JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'phishguard-jwt-secret')
+        JWT_EXPIRATION_DELTA = None
+        JWT_ALGORITHM = 'HS256'
+        MIN_PASSWORD_LENGTH = 8
+        REQUIRE_UPPERCASE = True
+        REQUIRE_NUMBER = True
+        REQUIRE_SPECIAL_CHAR = True
     print("[!] config.py not found — using default Config")
 
 try:
@@ -513,21 +529,29 @@ except Exception as _ext_err:
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.SECRET_KEY if hasattr(Config, 'SECRET_KEY') else 'phishguard-secret-key'
 
+# CORS configuration - support both development and production
+allowed_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:3000,http://localhost:8080,http://127.0.0.1:5500').split(',')
+if os.environ.get('FLASK_ENV') == 'production':
+    # In production, use environment variable
+    allowed_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
+
 CORS(
     app,
-    resources={
-        r"/*": {
-            "origins": "https://phising-detection-1-sq75.onrender.com"
-        }
-    },
+    origins=allowed_origins,
+    allow_headers=['Content-Type', 'Authorization'],
+    methods=['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
     supports_credentials=True
 )
+
+# Rate limiting
+rate_limit_default = getattr(Config, 'RATELIMIT_DEFAULT', "100 per minute")
+rate_limit_storage = getattr(Config, 'RATELIMIT_STORAGE_URL', "memory://")
 
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
-    default_limits=[Config.RATELIMIT_DEFAULT if hasattr(Config, 'RATELIMIT_DEFAULT') else "100 per minute"],
-    storage_uri=Config.RATELIMIT_STORAGE_URL if hasattr(Config, 'RATELIMIT_STORAGE_URL') else "memory://"
+    default_limits=[rate_limit_default],
+    storage_uri=rate_limit_storage
 )
 
 if AUTH_ENABLED and auth_bp:
@@ -833,9 +857,9 @@ def scan_enhanced():
                 risk_factors=[]
             )
             
-            classification = ensemble_result['final_classification']
-            confidence_pct = ensemble_result['confidence_percentage']
-            risk_level = ensemble_result['final_risk_level']
+            classification = ensemble_result.get('final_classification', 'Unknown')
+            confidence_pct = ensemble_result.get('confidence_percentage', ml_result['confidence'])
+            risk_level = ensemble_result.get('final_risk_level', 'Unknown')
             ensemble_score = ensemble_result['ensemble_score']
             detection_modules = ensemble_result.get('ensemble_modules', {})
             detection_breakdown = ensemble_result.get('detection_breakdown', {})
@@ -903,10 +927,15 @@ def api_scan():
     
     try:
         result = predict_url(url)
-        if not result:
+        if result is None:
             return jsonify({"error": "Failed to analyze URL"}), 500
         
-        risk_factors = explain_features(url)
+        try:
+            risk_factors = explain_features(url)
+        except Exception as e:
+            print(f"Warning: explain_features failed: {e}")
+            risk_factors = {}
+        
         metrics = extract_metrics_for_extension(url, risk_factors)
         
         log_scan(url=url, label=result['classification'], 
@@ -943,10 +972,14 @@ def check_url():
     
     try:
         result = predict_url(url)
-        if not result:
+        if result is None:
             return jsonify({"error": "Failed to analyze URL"}), 500
         
-        risk_factors = explain_features(url)
+        try:
+            risk_factors = explain_features(url)
+        except Exception as e:
+            print(f"Warning: explain_features failed: {e}")
+            risk_factors = {}
         
         log_scan(url=url, label=result['classification'], 
                 confidence=result['confidence'] / 100,
@@ -984,7 +1017,7 @@ def api_predict():
             return jsonify({"error": "URL must start with http:// or https://"}), 400
         
         result = predict_url(url)
-        if not result:
+        if result is None:
             return jsonify({'error': 'Prediction failed'}), 500
         
         log_scan(result['url'], result['prediction'], 
@@ -1014,21 +1047,22 @@ def predict_authenticated(current_user=None):
             return jsonify({"error": "URL must start with http:// or https://"}), 400
         
         result = predict_url(url)
-        if not result:
+        if result is None:
             return jsonify({'error': 'Prediction failed'}), 500
         
+        result['saved'] = False
         if DATABASE_ENABLED and ScanHistory and current_user:
             try:
-                ScanHistory.add_scan(user_id=current_user['id'], url=result['url'],
-                                    prediction=result['prediction'],
-                                    confidence=result['confidence'] / 100,
-                                    risk_level=result['risk_level'])
+                ScanHistory.add_scan(
+                    user_id=current_user['id'], 
+                    url=result['url'],
+                    prediction=result['prediction'],
+                    confidence=result['confidence'] / 100,
+                    risk_level=result['risk_level']
+                )
                 result['saved'] = True
             except Exception as db_err:
                 print(f"Failed to save scan history: {db_err}")
-                result['saved'] = False
-        else:
-            result['saved'] = False
         
         log_scan(result['url'], result['prediction'], 
                 result['confidence'] / 100, result['risk_level'])

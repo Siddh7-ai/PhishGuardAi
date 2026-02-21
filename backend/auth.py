@@ -3,8 +3,24 @@ Authentication routes
 """
 from flask import Blueprint, request, jsonify
 import re
-from database import User
-from middleware import create_jwt_token, token_required, validate_password_strength
+import os
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    from database import User
+    from middleware import create_jwt_token, token_required, validate_password_strength
+except ImportError as e:
+    print(f"Warning: Failed to import dependencies: {e}")
+    # Provide fallback implementations if imports fail
+    User = None
+    create_jwt_token = lambda uid: f"token_{uid}"
+    token_required = lambda f: f
+    def validate_password_strength(pwd):
+        return len(pwd) >= 8, None if len(pwd) >= 8 else "Password too short"
+
 from flask_cors import CORS
 
 auth_bp = Blueprint('auth', __name__)
@@ -30,6 +46,9 @@ def register():
     if request.method == "OPTIONS":
         return "", 200
     try:
+        if not User:
+            return jsonify({'error': 'Database not available'}), 503
+        
         data = request.get_json()
         
         if not data:
@@ -84,6 +103,9 @@ def login():
     if request.method == "OPTIONS":
         return "", 200
     try:
+        if not User:
+            return jsonify({'error': 'Database not available'}), 503
+        
         data = request.get_json()
         
         if not data:

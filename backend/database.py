@@ -61,7 +61,8 @@ class User:
     def create(username, email, password):
         """Create new user"""
         try:
-            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12))
+            # bcrypt.hashpw returns bytes, need to decode to string for storage
+            password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
             
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.cursor()
@@ -112,7 +113,9 @@ class User:
                 raise ValueError("Account temporarily locked due to multiple failed login attempts")
         
         # Verify password
-        if bcrypt.checkpw(password.encode('utf-8'), password_hash):
+        # password_hash is stored as string, need to encode to bytes for bcrypt
+        password_hash_bytes = password_hash.encode('utf-8') if isinstance(password_hash, str) else password_hash
+        if bcrypt.checkpw(password.encode('utf-8'), password_hash_bytes):
             cursor.execute('''
                 UPDATE users 
                 SET last_login = CURRENT_TIMESTAMP, 
