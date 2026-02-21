@@ -5,8 +5,10 @@ from flask import Blueprint, request, jsonify
 import re
 from database import User
 from middleware import create_jwt_token, token_required, validate_password_strength
+from flask_cors import CORS
 
 auth_bp = Blueprint('auth', __name__)
+CORS(auth_bp)
 
 def validate_email(email):
     """Validate email format"""
