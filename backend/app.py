@@ -480,16 +480,7 @@ except ImportError:
     ScanHistory = None
     print("[!] database.py not found — database features disabled")
 
-try:
-    from auth import auth_bp
-    from middleware import token_required
-    AUTH_ENABLED = True
-    print("[✓] Auth module loaded")
-except ImportError:
-    AUTH_ENABLED = False
-    auth_bp = None
-    token_required = lambda f: f
-    print("[!] auth.py / middleware.py not found — auth features disabled")
+AUTH_ENABLED = True
 
 try:
     from services.url_validator import URLValidator
