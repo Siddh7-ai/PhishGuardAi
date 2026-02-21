@@ -530,14 +530,16 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.SECRET_KEY if hasattr(Config, 'SECRET_KEY') else 'phishguard-secret-key'
 
 # CORS configuration - support both development and production
-allowed_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:3000,http://localhost:8080,http://127.0.0.1:5500').split(',')
-if os.environ.get('FLASK_ENV') == 'production':
-    # In production, use environment variable
-    allowed_origins = os.environ.get('CORS_ORIGINS', '*').split(',')
-
+# REPLACE WITH THIS:
 CORS(
     app,
-    origins=allowed_origins,
+    resources={r"/*": {"origins": [
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:5500",
+        "https://your-actual-app.vercel.app",   # ← your Vercel URL
+        "https://*.vercel.app"
+    ]}},
     allow_headers=['Content-Type', 'Authorization'],
     methods=['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
     supports_credentials=True

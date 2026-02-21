@@ -30,7 +30,7 @@ const CONFIG = {
     MAX_HISTORY:        10,
     THEMES:             ["cyber", "dark", "light"],
     ANIMATION_DURATION: 1000,
-    API_ENDPOINT: "https://phising-detection-api.onrender.com/api/scan-enhanced"
+    API_ENDPOINT: "https://phishguardai-nnez.onrender.com"
 };
 
 // ML-only thresholds (must match backend)
@@ -130,6 +130,7 @@ function init() {
     attachEventListeners();
     setupKeyboardShortcuts();
     loadSavedTheme();
+    updateAuthUI();
     console.log("✅ PhishGuard AI v6.1 initialized (ML-only verdict + FIXED CHARTS + Extension Download)");
 }
 
@@ -208,6 +209,9 @@ function attachEventListeners() {
     const downloadExtBtn = document.getElementById("downloadExtensionBtn");
     if (downloadExtBtn) {
         downloadExtBtn.addEventListener("click", downloadExtension);
+    }
+    if (elements.logoutBtn) {
+    elements.logoutBtn.addEventListener("click", handleLogout);
     }
 }
 
@@ -1166,7 +1170,6 @@ function toggleDetails() {
     }
 }
 
-
 // ------------------------------------------------------------------
 // TOAST
 // ------------------------------------------------------------------
@@ -1338,6 +1341,45 @@ function showInstallationInstructions() {
         }
     };
     document.addEventListener("keydown", escHandler);
+}
+
+function updateAuthUI() {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
+    if (!elements.username || !elements.logoutBtn || !elements.userBadge) return;
+
+    if (token && user) {
+        // Logged in
+        elements.username.textContent = user.username;
+        elements.logoutBtn.classList.remove("hidden");
+        elements.logoutBtn.style.display = "flex"; 
+        elements.userBadge.classList.remove("guest");
+        elements.userBadge.style.cursor = "default";
+    } else {
+        // Guest mode
+        elements.username.textContent = "Guest";
+        elements.logoutBtn.style.display = "none";       // ← add this line
+        elements.logoutBtn.classList.add("hidden");
+        elements.userBadge.style.cursor = "pointer";
+    }
+}
+
+function handleLogout() {
+
+    // Remove auth data
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    // Clear API client token if exists
+    if (window.API && typeof window.API.setToken === "function") {
+        window.API.setToken(null);
+    }
+
+    // Update UI immediately
+    updateAuthUI();
+
+    showToast("Logged out successfully", "success");
 }
 
 // ------------------------------------------------------------------

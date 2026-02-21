@@ -144,27 +144,28 @@ async function handleLogin(e) {
     hideError('loginError');
 
     try {
-        const response = await fetch("https://phising-detection-api.onrender.com/auth/login", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email, password })
-        });
+        const data = await window.API.login(email, password);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Login failed');
-        }
-
+        // ✅ Save token + user
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
 
-        updateUserDisplay(data.user.username);
+        // ✅ Update API client token
+        if (window.API && typeof window.API.setToken === 'function') {
+            window.API.setToken(data.token);
+        }
+
+        // ✅ Update UI
+        if (typeof updateAuthUI === 'function') {
+            updateAuthUI();
+        } else {
+            updateUserDisplay(data.user.username);
+        }
+
         showToast('Login successful!', 'success');
         closeAuthModal();
 
+        // Execute callback if exists (download/share/export)
         if (authModalCallback) {
             authModalCallback();
             authModalCallback = null;
@@ -172,7 +173,7 @@ async function handleLogin(e) {
 
     } catch (error) {
         console.error('Login error:', error);
-        showError('loginError', error.message || 'Login failed');
+        showError('loginError', error.message || 'Invalid email or password');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> <span>Login</span>';
@@ -191,7 +192,6 @@ async function handleSignup(e) {
     const confirmPassword = document.getElementById('signupPasswordConfirm').value;
     const btn = document.getElementById('signupBtn');
     
-    // Validation
     if (!username || !email || !password || !confirmPassword) {
         showError('signupError', 'Please fill in all fields');
         return;
@@ -201,64 +201,41 @@ async function handleSignup(e) {
         showError('signupError', 'Passwords do not match');
         return;
     }
-    
-    if (password.length < 8) {
-        showError('signupError', 'Password must be at least 8 characters');
-        return;
-    }
-    
-    if (username.length < 3 || username.length > 20) {
-        showError('signupError', 'Username must be 3-20 characters');
-        return;
-    }
-    
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        showError('signupError', 'Username can only contain letters, numbers, and underscore');
-        return;
-    }
-    
-    // Show loading
+
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Creating account...</span>';
     hideError('signupError');
     
     try {
-        const response = await fetch('https://phising-detection-api.onrender.com/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username, email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Registration failed');
-        }
-        
-        // Save token and user
+        const data = await window.API.register(username, email, password);
+
+        // ✅ Save token + user
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Update UI
-        updateUserDisplay(data.user.username);
-        
-        // Show success
+
+        // ✅ Update API client token
+        if (window.API && typeof window.API.setToken === 'function') {
+            window.API.setToken(data.token);
+        }
+
+        // ✅ Update UI
+        if (typeof updateAuthUI === 'function') {
+            updateAuthUI();
+        } else {
+            updateUserDisplay(data.user.username);
+        }
+
         showToast('Account created successfully!', 'success');
-        
-        // Close modal
         closeAuthModal();
-        
-        // Execute callback if exists
+
         if (authModalCallback) {
             authModalCallback();
             authModalCallback = null;
         }
-        
+
     } catch (error) {
         console.error('Signup error:', error);
-        showError('signupError', error.message || 'Registration failed. Please try again.');
+        showError('signupError', error.message || 'Registration failed');
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-user-plus"></i> <span>Create Account</span>';

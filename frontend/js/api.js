@@ -10,14 +10,7 @@ class APIClient {
         const isDevelopment = window.location.hostname === 'localhost' || 
                             window.location.hostname === '127.0.0.1';
         
-        if (isDevelopment) {
-            this.baseURL = "http://localhost:5000";
-        } else {
-            // Production - use environment variable or deployed URL
-            this.baseURL = window.__API_URL__ || 
-                          process.env.REACT_APP_API_URL ||
-                          "https://phishing-detection-api.onrender.com";
-        }
+        this.baseURL = "https://phishguardai-nnez.onrender.com";
         
         console.log("✅ APIClient initialized with baseURL:", this.baseURL);
     }
