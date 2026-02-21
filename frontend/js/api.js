@@ -139,10 +139,11 @@ class APIClient {
      * Scan URL (public endpoint - no auth required)
      * FIXED: Uses /api/scan endpoint
      */
+    // REPLACE WITH THIS:
     async scanURL(url) {
         console.log('🔍 Scanning URL:', url);
 
-        const response = await fetch(`${this.baseURL}/api/scan-enhanced`, {
+        const response = await fetch(`${this.baseURL}/api/predict`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -157,7 +158,6 @@ class APIClient {
             throw new Error(data.error || 'Scan failed');
         }
 
-        // ✅ Return the data AS-IS - backend already formats it correctly
         console.log('✅ Final response:', data);
         return data;
     }
