@@ -543,8 +543,8 @@ def get_model_name():
 
 def predict_url(url):
     OWN_DOMAINS = [
-        'phish-guard-ai-lac.vercel.app',
-        'phishguardai-nnez.onrender.com',
+        'https://phish-guard-ai-lac.vercel.app',
+        'https://phishguardai-nnez.onrender.com',
     ]
     try:
         features = extract_features(url)
