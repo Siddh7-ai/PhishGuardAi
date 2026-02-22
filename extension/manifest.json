@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PhishGuard AI",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "AI-powered phishing detection - 100% backend ML driven",
 
   "permissions": [
@@ -13,7 +13,7 @@
 
   "host_permissions": [
     "<all_urls>",
-    "http://127.0.0.1:5000/*"
+    "https://phishguardai-nnez.onrender.com/*"
   ],
 
   "background": {

@@ -349,7 +349,7 @@
     }
 
     // Update percentage
-    valueEl.textContent = Number(confidence).toFixed(2) + '%';
+    valueEl.textContent = Math.round(confidence) + '%';
 
     // Animate circle
     const circumference = 2 * Math.PI * 65;
@@ -373,7 +373,7 @@
     // Add classification
     addMetricSection(metricsBox, 'Detection Results');
     addMetric(metricsBox, 'Classification', result.classification, getClassColor(result.classification));
-    addMetric(metricsBox,'Confidence',Number(result.confidence).toFixed(2) + '%','normal');
+    addMetric(metricsBox, 'Confidence', Math.round(result.confidence) + '%', 'normal');
     addMetric(metricsBox, 'Risk Level', (result.risk_level || 'low').toUpperCase(), getRiskColor(result.risk_level));
 
     // Add module scores if available

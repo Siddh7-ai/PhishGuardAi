@@ -6,7 +6,7 @@ const CONFIG = {
     // Development environment
     if (chrome.runtime.getURL('').includes('extension')) {
       // Local development
-      return 'http://127.0.0.1:5000/api/scan';
+      return 'https://phishguardai-nnez.onrender.com/api/scan';
     }
     // Production - use environment or fallback to deployed URL
     return process.env.REACT_APP_API_URL || 'https://phishing-detection-api.onrender.com/api/scan';
@@ -64,7 +64,9 @@ const CONFIG = {
     'instagram.com',
     'wikipedia.org',
     'cloudflare.com',
-    'mozilla.org'
+    'mozilla.org',
+    'vercel.app',
+    'onrender.com'
   ]
 };
 

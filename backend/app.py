@@ -418,13 +418,16 @@ ALLOWED_ORIGINS = [
     'http://localhost:8080',
     'http://127.0.0.1:5500',
     'http://127.0.0.1:3000',
+    'chrome-extension://',
 ]
 
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin', '')
-    # Allow exact match OR any vercel.app subdomain
-    if origin in ALLOWED_ORIGINS or (origin.endswith('.vercel.app') and origin.startswith('https://')):
+    # Allow exact match OR any vercel.app subdomain OR any Chrome extension
+    if (origin in ALLOWED_ORIGINS or 
+        (origin.endswith('.vercel.app') and origin.startswith('https://')) or
+        origin.startswith('chrome-extension://')):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
