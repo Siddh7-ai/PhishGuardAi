@@ -39,6 +39,11 @@ async function handleMessage(message, sender, sendResponse) {
         handleClearCache(sendResponse);
         break;
 
+      case 'ALLOW_URL_FOR_TAB':
+        navigationGuard.allowUrlForTab(message.tabId, message.url);
+        sendResponse({ success: true });
+        break;
+
       default:
         sendResponse({ error: 'Unknown message type' });
     }

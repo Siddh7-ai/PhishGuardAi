@@ -1,5 +1,5 @@
-// API Client - Backend ML Only
-// No whitelist, no local logic — 100% ML model decisions
+// API Client - Scans ALL URLs so popup always gets real data
+// Trusted domain blocking prevention is handled in navigation_guard.js
 
 import CONFIG from './config.js';
 
@@ -11,8 +11,7 @@ class APIClient {
   getCached(url) {
     const cached = this.cache.get(url);
     if (!cached) return null;
-    const age = Date.now() - cached.timestamp;
-    if (age > CONFIG.CACHE_TTL_MS) {
+    if (Date.now() - cached.timestamp > CONFIG.CACHE_TTL_MS) {
       this.cache.delete(url);
       return null;
     }
@@ -21,73 +20,64 @@ class APIClient {
 
   setCached(url, result) {
     this.cache.set(url, { result, timestamp: Date.now() });
-    if (this.cache.size > 100) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+    if (this.cache.size > 100) this.cache.delete(this.cache.keys().next().value);
+  }
+
+  async _fetch(url, timeoutMs) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(CONFIG.API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+        signal: ctrl.signal
+      });
+      clearTimeout(t);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      clearTimeout(t);
+      throw e;
     }
   }
 
   async scanURL(url) {
-    // 🚫 Skip internal browser pages only
+    // Skip only internal browser/extension pages — these can't be scanned
     try {
-      const urlObj = new URL(url);
-      const scheme = urlObj.protocol;
-      if (scheme === 'chrome:' || scheme === 'chrome-extension:' || 
-          scheme === 'about:' || scheme === 'file:') {
-        console.log('⏭ Skipping internal page:', url);
-        return {
-          url, classification: 'Legitimate',
-          confidence: 0, risk_level: 'low', skipped: true
-        };
+      const p = new URL(url).protocol;
+      if (['chrome:', 'chrome-extension:', 'about:', 'file:'].includes(p)) {
+        return { url, classification: 'Legitimate', confidence: 0, risk_level: 'low', skipped: true };
       }
-    } catch (e) {
-      console.warn('URL parse error:', e);
-    }
+    } catch (_) {}
 
-    // ✅ Check cache
-    const cached = this.getCached(url);
-    if (cached) {
-      console.log('⚡ Using cached result for:', url);
-      return cached;
-    }
+    // Check cache
+    const hit = this.getCached(url);
+    if (hit) { console.log('⚡ Cache hit:', url); return hit; }
 
-    // ✅ Call backend ML model
-    try {
-      console.log('🔍 Sending to ML model:', url);
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT_MS);
+    // Scan with retry: 15s → 20s → 25s
+    const timeouts = [15000, 20000, 25000];
+    const delays   = [1000, 2000];
+    let lastErr;
 
-      const response = await fetch(CONFIG.API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) throw new Error(`Backend error: ${response.status}`);
-
-      const result = await response.json();
-      this.setCached(url, result);
-      return result;
-
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.error('❌ Request timed out:', url);
-      } else {
-        console.error('❌ Backend error:', error);
+    for (let i = 0; i < timeouts.length; i++) {
+      try {
+        console.log(`🔍 Attempt ${i + 1}: ${url}`);
+        const result = await this._fetch(url, timeouts[i]);
+        this.setCached(url, result);
+        return result;
+      } catch (e) {
+        lastErr = e;
+        console.warn(`❌ Attempt ${i + 1} failed: ${e.message}`);
+        if (i < delays.length) await new Promise(r => setTimeout(r, delays[i]));
       }
-      return {
-        url, classification: 'Error',
-        confidence: 0, risk_level: 'unknown', error: true
-      };
     }
+
+    console.error('❌ All attempts failed:', url);
+    return { url, classification: 'Error', confidence: 0, risk_level: 'unknown', error: true };
   }
 
-  clearCache() {
-    this.cache.clear();
-  }
+  clearCache() { this.cache.clear(); }
 }
 
 const apiClient = new APIClient();
